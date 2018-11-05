@@ -41,6 +41,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.EMap;
 import org.eclipse.ui.IEditorPart;
 import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.CommonExceptionHandler;
@@ -505,6 +506,7 @@ public class ProcessorUtilities {
             mainRelation.setId(jobInfo.getJobId());
             mainRelation.setVersion(jobInfo.getJobVersion());
             mainRelation.setType(RelationshipItemBuilder.JOB_RELATION);
+            mainRelation.setProjectLabel(jobInfo.getProjectLabel());
             hasLoopDependency = checkLoopDependencies(mainRelation);
             // clean the previous code in case it has deleted subjob
             cleanSourceFolder(progressMonitor, currentProcess, processor);
@@ -971,11 +973,11 @@ public class ProcessorUtilities {
             String currentJobName = null;
             if (selectedProcessItem == null && jobInfo.getJobVersion() == null) {
                 // child job
-                selectedProcessItem = ItemCacheManager.getProcessItem(jobInfo.getJobId());
+                selectedProcessItem = ItemCacheManager.getProcessItem(ProcessUtils.getProjectProcessId(jobInfo.getProjectLabel(), jobInfo.getJobId()));
             }
 
             if (selectedProcessItem == null && jobInfo.getJobVersion() != null) {
-                selectedProcessItem = ItemCacheManager.getProcessItem(jobInfo.getJobId(), jobInfo.getJobVersion());
+                selectedProcessItem = ItemCacheManager.getProcessItem(ProcessUtils.getProjectProcessId(jobInfo.getProjectLabel(), jobInfo.getJobId()), jobInfo.getJobVersion());
                 jobInfo.setProcessItem(selectedProcessItem);
             }
 
@@ -1347,6 +1349,7 @@ public class ProcessorUtilities {
         }
         JobInfo generatedJobInfo = new JobInfo(jobInfo.getJobId(), jobInfo.getContextName(), jobInfo.getJobVersion());
         generatedJobInfo.setJobName(jobInfo.getJobName());
+        generatedJobInfo.setProjectLabel(jobInfo.getProjectLabel());
         generatedJobInfo.setTestContainer(jobInfo.isTestContainer());
         generatedJobInfo.setFatherJobInfo(cloneJobInfo(jobInfo.getFatherJobInfo()));
         generatedJobInfo.setProcessor(jobInfo.getProcessor());
@@ -1407,8 +1410,13 @@ public class ProcessorUtilities {
                         if (StringUtils.isNotEmpty(jobId)) {
                             String context = (String) node.getElementParameter("PROCESS_TYPE_CONTEXT").getValue(); //$NON-NLS-1$
                             String version = (String) node.getElementParameter("PROCESS_TYPE_VERSION").getValue(); //$NON-NLS-1$
-                            final JobInfo subJobInfo = new JobInfo(jobId, context, version);
-
+                            String projectLabel = ProcessUtils.getProjectLabelFromItemId(jobId);
+                            String pureJobId = jobId;
+                            if (projectLabel != null) {
+                                pureJobId = ProcessUtils.getPureItemId(jobId);
+                            }
+                            final JobInfo subJobInfo = new JobInfo(pureJobId, context, version);
+                            subJobInfo.setProjectLabel(projectLabel);
                             // get processitem from job
                             final ProcessItem processItem = ItemCacheManager.getProcessItem(jobId, version);
 
@@ -2389,6 +2397,10 @@ public class ProcessorUtilities {
             }
         }
         return null;
+    }
+    
+    public static boolean isNeedProjectProcessId(Item processItem) {
+        return true;
     }
 
     public static File getJavaProjectLibFolder() {

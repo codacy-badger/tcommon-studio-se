@@ -22,6 +22,8 @@ public class Relation implements Cloneable {
     private String id;
 
     private String version;
+    
+    private String projectLabel;
 
     public Relation() {
         super();
@@ -101,6 +103,15 @@ public class Relation implements Cloneable {
 
     public void setVersion(String version) {
         this.version = version;
+    }
+    
+    public String getProjectLabel() {
+        return projectLabel;
+    }
+
+    
+    public void setProjectLabel(String projectLabel) {
+        this.projectLabel = projectLabel;
     }
 
     @Override

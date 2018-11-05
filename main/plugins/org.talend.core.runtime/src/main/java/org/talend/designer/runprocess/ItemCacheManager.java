@@ -12,15 +12,17 @@
 // ============================================================================
 package org.talend.designer.runprocess;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.exception.PersistenceException;
 import org.talend.core.model.general.Project;
 import org.talend.core.model.properties.JobletProcessItem;
 import org.talend.core.model.properties.ProcessItem;
 import org.talend.core.model.relationship.RelationshipItemBuilder;
-import org.talend.core.model.repository.ERepositoryObjectType;
 import org.talend.core.model.repository.IRepositoryViewObject;
 import org.talend.core.runtime.CoreRuntimePlugin;
 import org.talend.repository.ProjectManager;
@@ -42,6 +44,9 @@ public class ItemCacheManager {
     }
 
     public static ProcessItem getProcessItem(Project project, String processId) {
+        if (project == null) {
+            return null;
+        }
         if (processId == null || "".equals(processId)) { //$NON-NLS-1$
             return null;
         }
@@ -62,8 +67,14 @@ public class ItemCacheManager {
     }
 
     public static ProcessItem getProcessItem(String processId) {
-        ProjectManager instance = ProjectManager.getInstance();
-        ProcessItem processItem = getRefProcessItem(instance.getCurrentProject(), processId);
+        String[] parsedArray = parseProcessId(processId);
+        ProcessItem processItem = null;
+        if (StringUtils.isEmpty(parsedArray[0])) {
+            processItem = getRefProcessItem(ProjectManager.getInstance().getCurrentProject(), parsedArray[1]);
+        } else {
+            Project project = ProjectManager.getInstance().getProjectFromProjectTechLabel(parsedArray[0]);
+            processItem = getProcessItem(project, parsedArray[1]);
+        }
         return processItem;
     }
 
@@ -83,8 +94,29 @@ public class ItemCacheManager {
     }
 
     public static ProcessItem getProcessItem(String processId, String version) {
-        ProcessItem refProcessItem = getRefProcessItem(ProjectManager.getInstance().getCurrentProject(), processId, version);
+        String[] parsedArray = parseProcessId(processId);
+        ProcessItem refProcessItem = null;
+        if (StringUtils.isEmpty(parsedArray[0])) {
+            refProcessItem = getRefProcessItem(ProjectManager.getInstance().getCurrentProject(), parsedArray[1], version);
+        } else {
+            Project project = ProjectManager.getInstance().getProjectFromProjectTechLabel(parsedArray[0]);
+            refProcessItem = getProcessItem(project, parsedArray[1], version);
+        }
         return refProcessItem;
+    }
+    
+    private static String[] parseProcessId(String processId) {
+        String[] parsedArray = new String[2];
+        if (processId != null) {
+            String[] splitArray = processId.split(":");
+            if (splitArray.length == 2) {
+                parsedArray[0] = splitArray[0];
+                parsedArray[1] = splitArray[1];
+            } else {
+                parsedArray[1] = splitArray[0];
+            }
+        }
+        return parsedArray;
     }
 
     public static ProcessItem getRefProcessItem(Project project, String processId, String version) {
@@ -99,6 +131,27 @@ public class ItemCacheManager {
             }
         }
         return processItem;
+    }
+    
+    public static Map<Project, ProcessItem> getAllProcessItem(String processId, String version) {
+        Map<Project, ProcessItem> projectToProcessItemMap = new HashMap<Project, ProcessItem>();
+        getAllProcessItem(ProjectManager.getInstance().getCurrentProject(), processId, version, projectToProcessItemMap);
+        return projectToProcessItemMap;
+    }
+
+    private static void getAllProcessItem(Project project, String processId, String version,
+            Map<Project, ProcessItem> projectToProcessItemMap) {
+        ProjectManager projectManager = ProjectManager.getInstance();
+        ProcessItem processItem = getProcessItem(project, processId, version);
+        if (processItem != null) {
+            projectToProcessItemMap.put(project, processItem);
+        }
+        for (Project p : projectManager.getReferencedProjects(project)) {
+            processItem = getProcessItem(p, processId, version);
+            if (processItem != null) {
+                projectToProcessItemMap.put(p, processItem);
+            }
+        }
     }
 
     public static ProcessItem getProcessItem(Project project, String processId, String version) {

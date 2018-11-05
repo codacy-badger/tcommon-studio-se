@@ -14,6 +14,7 @@ package org.talend.core.model.process;
 
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.talend.core.model.properties.ProcessItem;
 import org.talend.core.model.properties.Property;
@@ -55,6 +56,8 @@ public class JobInfo {
     private IFile codeFile;
 
     private Property jobletProperty;
+    
+    private String projectLabel = null;
 
     private boolean isJoblet;
 
@@ -62,6 +65,7 @@ public class JobInfo {
         this.jobId = jobId;
         this.contextName = contextName;
         this.jobVersion = version;
+        initJobId();
     }
 
     public JobInfo(Property jobletProperty, String contextName) {
@@ -70,6 +74,7 @@ public class JobInfo {
         this.jobVersion = jobletProperty.getVersion();
         this.contextName = contextName;
         this.jobletProperty = jobletProperty;
+        initJobId();
         isJoblet = true;
     }
 
@@ -84,6 +89,7 @@ public class JobInfo {
         jobName = process.getName();
         contextName = context.getName();
         jobVersion = process.getVersion();
+        initJobId();
         this.context = context;
         this.process = process;
     }
@@ -100,7 +106,7 @@ public class JobInfo {
         jobName = processItem.getProperty().getLabel();
         this.contextName = contextName;
         jobVersion = processItem.getProperty().getVersion();
-
+        initJobId();
         // check if the selected context exists, if not, use the default context of the job.
         boolean contextExists = false;
         for (Object object : processItem.getProcess().getContext()) {
@@ -122,7 +128,7 @@ public class JobInfo {
         jobName = property.getLabel();
         this.contextName = contextName;
         jobVersion = property.getVersion();
-
+        initJobId();
         // check if the selected context exists, if not, use the default context of the job.
         boolean contextExists = false;
         for (Object object : processItem.getProcess().getContext()) {
@@ -150,7 +156,7 @@ public class JobInfo {
         jobName = processItem.getProperty().getLabel();
         this.contextName = contextName;
         jobVersion = processVersion;
-
+        initJobId();
         // check if the selected context exists, if not, use the default context of the job.
         boolean contextExists = false;
         for (Object object : processItem.getProcess().getContext()) {
@@ -163,6 +169,16 @@ public class JobInfo {
         }
         if (!contextExists) {
             this.contextName = processItem.getProcess().getDefaultContext();
+        }
+    }
+    
+    private void initJobId() {
+        if (this.jobId != null) {
+            String proLabel = ProcessUtils.getProjectLabelFromItemId(jobId);
+            if (projectLabel != null) {
+                this.projectLabel = proLabel;
+                this.jobId = ProcessUtils.getPureItemId(jobId);
+            }
         }
     }
 
@@ -497,6 +513,16 @@ public class JobInfo {
 
     public boolean isJoblet() {
         return isJoblet;
+    }
+
+    
+    public String getProjectLabel() {
+        return projectLabel;
+    }
+
+    
+    public void setProjectLabel(String projectLabel) {
+        this.projectLabel = projectLabel;
     }
 
 }

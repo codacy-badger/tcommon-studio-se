@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.emf.common.util.EList;
 import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.exception.PersistenceException;
@@ -68,7 +69,7 @@ import org.talend.repository.model.IProxyRepositoryService;
  */
 @SuppressWarnings("unchecked")
 public final class ProcessUtils {
-
+    public static final String PROJECT_ID_SEPARATOR = ":";
     private static List<IProcess> fakeProcesses = new ArrayList<>();
 
     private static IHadoopClusterService hadoopClusterService = null;
@@ -974,5 +975,40 @@ public final class ProcessUtils {
 
         return false;
     }
+
+    public static String getPureItemId(Object objectId) {
+        if (objectId != null) {
+            String stringValue = objectId.toString();
+            if (stringValue.indexOf(PROJECT_ID_SEPARATOR) > 0) {
+                String[] array = stringValue.split(PROJECT_ID_SEPARATOR);
+                if (array.length == 2) {
+                    return array[1];
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getProjectLabelFromItemId(String id) {
+        if (id != null && id.indexOf(PROJECT_ID_SEPARATOR) > 0) {
+            String[] array = id.split(PROJECT_ID_SEPARATOR);
+            if (array.length == 2) {
+                return array[0];
+            }
+        }
+        return null;
+    }
+
+    public static String getProjectProcessId(String projectLabel, String id) {
+        if (StringUtils.isNotEmpty(projectLabel)) {
+            StringBuffer sb = new StringBuffer();
+            sb.append(projectLabel);
+            sb.append(PROJECT_ID_SEPARATOR);
+            sb.append(id);
+            return sb.toString();
+        }
+        return id;
+    }
+    
 
 }

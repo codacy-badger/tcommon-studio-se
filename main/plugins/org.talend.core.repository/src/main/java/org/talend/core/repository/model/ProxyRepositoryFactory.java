@@ -140,6 +140,7 @@ import org.talend.repository.documentation.ERepositoryActionName;
 import org.talend.repository.model.IProxyRepositoryFactory;
 import org.talend.repository.model.RepositoryConstants;
 import org.talend.utils.io.FilesUtils;
+
 import orgomg.cwm.objectmodel.core.ModelElement;
 
 /**
@@ -1095,9 +1096,15 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
 
     @Override
     public IRepositoryViewObject getLastVersion(String id) throws PersistenceException {
+//        String projectLabel = ProcessorUtilities.getProjectLabelFromItemId(id);
+//        if (projectLabel != null) {
+//            Project project = ProjectManager.getInstance().getProjectFromProjectLabel(projectLabel);
+//            if (project != null) {
+//                return getLastVersion(project, ProcessorUtilities.getPureItemId(id));
+//            }
+//        }
         IRepositoryViewObject lastRefVersion = getLastRefVersion(projectManager.getCurrentProject(), id);
         return lastRefVersion;
-
     }
 
     @Override
