@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common UI Plug-in
 Bundle-SymbolicName: org.talend.commons.ui;singleton:=true
-Bundle-Version: 7.1.1.qualifier
+Bundle-Version: 7.2.1.qualifier
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
  org.eclipse.jface.text,
@@ -54,6 +54,7 @@ Export-Package: org.talend.commons.ui.command,
  org.talend.commons.ui.swt.geftree.layout,
  org.talend.commons.ui.swt.geftree.ui,
  org.talend.commons.ui.swt.linking,
+ org.talend.commons.ui.swt.listviewer,
  org.talend.commons.ui.swt.preferences,
  org.talend.commons.ui.swt.proposal,
  org.talend.commons.ui.swt.proposal.xpath,

@@ -45,15 +45,15 @@ public enum EDatabaseConnTemplate {
             "noDatetimeStringSync=true")), //$NON-NLS-1$
 
     PSQL(new DbConnStr(EDatabaseTypeName.PSQL, //
-            "jdbc:postgresql://<host>:<port>/<sid>", //$NON-NLS-1$
+            "jdbc:postgresql://<host>:<port>/<sid>?<property>", //$NON-NLS-1$
             "5432")), //$NON-NLS-1$
 
     PLUSPSQL(new DbConnStr(EDatabaseTypeName.PLUSPSQL, //
-            "jdbc:postgresql://<host>:<port>/<sid>", //$NON-NLS-1$
+            "jdbc:postgresql://<host>:<port>/<sid>?<property>", //$NON-NLS-1$
             "5432")), //$NON-NLS-1$
 
     GREENPLUM(new DbConnStr(EDatabaseTypeName.GREENPLUM, //
-            "jdbc:postgresql://<host>:<port>/<sid>", //$NON-NLS-1$
+            "jdbc:postgresql://<host>:<port>/<sid>?<property>", //$NON-NLS-1$
             "5432")), //$NON-NLS-1$
 
     ORACLEFORSID(new DbConnStr(EDatabaseTypeName.ORACLEFORSID, //
@@ -92,7 +92,9 @@ public enum EDatabaseConnTemplate {
     SYBASEASE(new DbConnStr(EDatabaseTypeName.SYBASEASE, //
             "jdbc:sybase:Tds:<host>:<port>/<sid>?<property>", //$NON-NLS-1$ 
             "5001")), //$NON-NLS-1$
-
+    SYBASEASE_16_SA(new DbConnStr(EDatabaseTypeName.SYBASEASE, //
+            "jdbc:sqlanywhere:Host=<host>:<port>;DatabaseName=<sid>", //$NON-NLS-1$ 
+            "2638")), //$NON-NLS-1$
     IBMDB2(new DbConnStr(EDatabaseTypeName.IBMDB2, //
             "jdbc:db2://<host>:<port>/<sid>", //$NON-NLS-1$
             "50000")), //$NON-NLS-1$
@@ -175,7 +177,10 @@ public enum EDatabaseConnTemplate {
             "jdbc:redshift://<host>:<port>/<sid>", //$NON-NLS-1$
             "5439",//$NON-NLS-1$
             "")), //$NON-NLS-1$
-
+    REDSHIFT_SSO(new DbConnStr(EDatabaseTypeName.REDSHIFT_SSO, //
+            "jdbc:redshift:iam://<host>:<port>/<sid>?<property>", //$NON-NLS-1$
+            "5439",//$NON-NLS-1$
+            "")), //$NON-NLS-1$
     NETEZZA(new DbConnStr(EDatabaseTypeName.NETEZZA, //
             "jdbc:netezza://<host>:<port>/<sid>", //$NON-NLS-1$
             "5480")), //$NON-NLS-1$
@@ -359,9 +364,11 @@ public enum EDatabaseConnTemplate {
             case GREENPLUM:
             case PARACCEL:
             case REDSHIFT:
+            case REDSHIFT_SSO:
             case IBMDB2:
             case IBMDB2_ZOS:
             case SYBASEASE:
+            case SYBASEASE_16_SA:
             case SAS:
             case SAPHana:
             case HBASE:
@@ -388,13 +395,18 @@ public enum EDatabaseConnTemplate {
             case ORACLE_CUSTOM:
             case ORACLE_OCI:
             case SYBASEASE:
+            case SYBASEASE_16_SA:
             case HSQLDB_IN_PROGRESS: // for feature 11674
             case TERADATA: // for feature 0013719
             case VERTICA:
             case EXASOL:
             case ACCESS:
             case REDSHIFT:
+            case REDSHIFT_SSO:
             case SAPHana:
+            case PSQL:
+            case PLUSPSQL:
+            case GREENPLUM:
                 return true;
             default:
             }
@@ -408,6 +420,7 @@ public enum EDatabaseConnTemplate {
             switch (template) {
             case MYSQL:
             case SYBASEASE:
+            case SYBASEASE_16_SA:
             case IBMDB2:
             case IBMDB2_ZOS:
             case INGRES:

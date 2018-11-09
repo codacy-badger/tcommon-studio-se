@@ -106,7 +106,7 @@ public enum SupportDBUrlType {
             "localhost", //$NON-NLS-1$
             "5432", //$NON-NLS-1$
             "dbname", //$NON-NLS-1$
-            null,
+            "?",//$NON-NLS-1$
             "org.postgresql.Driver", //$NON-NLS-1$
             null,
             "PostgreSQL"), //$NON-NLS-1$
@@ -213,6 +213,14 @@ public enum SupportDBUrlType {
             null,
             "Impala"), //$NON-NLS-1$
     REDSHIFT("Redshift", //$NON-NLS-1$
+            "localhost", //$NON-NLS-1$
+            "5439", //$NON-NLS-1$
+            null,
+            null,
+            "com.paraccel.Driver", //$NON-NLS-1$
+            null,
+            "Redshift"), //$NON-NLS-1$
+    REDSHIFT_SSO("Redshift SSO", //$NON-NLS-1$
             "localhost", //$NON-NLS-1$
             "5439", //$NON-NLS-1$
             null,

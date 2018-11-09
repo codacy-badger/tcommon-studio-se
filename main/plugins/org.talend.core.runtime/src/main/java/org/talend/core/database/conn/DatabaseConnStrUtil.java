@@ -105,6 +105,10 @@ public class DatabaseConnStrUtil {
                 && EDatabaseVersion4Drivers.MARIADB.getVersionValue().equals(dbVersion)) {
             connStr = EDatabaseConnTemplate.MARIADB;
         }
+        if(EDatabaseTypeName.SYBASEASE.getDisplayName().equals(dbType)
+                && EDatabaseVersion4Drivers.SYBASEIQ_16_SA.getVersionValue().equals(dbVersion)) {
+        	connStr = EDatabaseConnTemplate.SYBASEASE_16_SA;
+        }
         EDatabaseVersion4Drivers version = EDatabaseVersion4Drivers.indexOfByVersion(dbVersion);
         if (connStr != null) {
             String s = connStr.getUrlTemplate(version);
@@ -115,7 +119,11 @@ public class DatabaseConnStrUtil {
                 s = getStringReplace(s, EDatabaseConnVar.LOGIN.getVariable(), login, supportContext);
                 s = getStringReplace(s, EDatabaseConnVar.PASSWORD.getVariable(), password, supportContext, true);
                 s = getStringReplace(s, EDatabaseConnVar.HOST.getVariable(), host, supportContext);
-                s = getStringReplace(s, EDatabaseConnVar.PORT.getVariable(), port, supportContext);
+                if (checkSpecialPortEmpty(dbType, port)) {
+                    s = getStringReplace(s, ":" + EDatabaseConnVar.PORT.getVariable(), port, supportContext);
+                } else {
+                    s = getStringReplace(s, EDatabaseConnVar.PORT.getVariable(), port, supportContext);
+                }
                 s = getStringReplace(s, EDatabaseConnVar.SID.getVariable(), sid, supportContext);
                 s = getStringReplace(s, EDatabaseConnVar.SERVICE_NAME.getVariable(), sid, supportContext);
                 s = getStringReplace(s, EDatabaseConnVar.DATASOURCE.getVariable(), datasource, supportContext);
@@ -125,6 +133,21 @@ public class DatabaseConnStrUtil {
             }
         }
         return DatabaseConnConstants.EMPTY;
+    }
+
+    /**
+     * For some special DB type, the port can be empty DOC jding Comment method "checkSpecialPortEmpty".
+     * 
+     * @param dbType
+     * @param port
+     * @return
+     */
+    private static boolean checkSpecialPortEmpty(final String dbType, final String port) {
+        boolean isSpecial = false;
+        if (EDatabaseTypeName.MSSQL.getDisplayName().equals(dbType) && StringUtils.isBlank(port)) {
+            isSpecial = true;
+        }
+        return isSpecial;
     }
 
     public static String getURLString(final String dbType, final String dbVersion, final String host, final String login,

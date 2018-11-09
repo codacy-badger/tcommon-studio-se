@@ -78,6 +78,7 @@ import org.talend.core.model.metadata.builder.connection.WSDLSchemaConnection;
 import org.talend.core.model.metadata.builder.connection.XMLFileNode;
 import org.talend.core.model.metadata.builder.connection.XmlFileConnection;
 import org.talend.core.model.metadata.builder.connection.XmlXPathLoopDescriptor;
+import org.talend.core.model.metadata.builder.connection.impl.DatabaseConnectionImpl;
 import org.talend.core.model.metadata.designerproperties.PropertyConstants.CDCTypeMode;
 import org.talend.core.model.process.IElementParameter;
 import org.talend.core.model.process.INode;
@@ -1261,30 +1262,6 @@ public class RepositoryToComponentProperty {
             return getAppropriateValue(connection, hbaseRegPrinc);
         }
 
-        if (value.equals("HBASEMASTER_PRINCIPAL")) {
-            String hbaseMasterPrinc = null;
-            if (EDatabaseTypeName.HBASE.getDisplayName().equals(databaseType)) {
-                hbaseMasterPrinc = connection.getParameters()
-                        .get(ConnParameterKeys.CONN_PARA_KEY_HBASE_AUTHENTICATION_MASTERPRINCIPAL);
-            } else if (EDatabaseTypeName.MAPRDB.getDisplayName().equals(databaseType)) {
-                hbaseMasterPrinc = connection.getParameters()
-                        .get(ConnParameterKeys.CONN_PARA_KEY_MAPRDB_AUTHENTICATION_MASTERPRINCIPAL);
-            }
-            return getAppropriateValue(connection, hbaseMasterPrinc);
-        }
-
-        if (value.equals("HBASEREIGONSERVER_PRINCIPAL")) {
-            String hbaseRegPrinc = null;
-            if (EDatabaseTypeName.HBASE.getDisplayName().equals(databaseType)) {
-                hbaseRegPrinc = connection.getParameters()
-                        .get(ConnParameterKeys.CONN_PARA_KEY_HBASE_AUTHENTICATION_REGIONSERVERPRINCIPAL);
-            } else if (EDatabaseTypeName.MAPRDB.getDisplayName().equals(databaseType)) {
-                hbaseRegPrinc = connection.getParameters()
-                        .get(ConnParameterKeys.CONN_PARA_KEY_MAPRDB_AUTHENTICATION_REGIONSERVERPRINCIPAL);
-            }
-            return getAppropriateValue(connection, hbaseRegPrinc);
-        }
-
         if (value.equals("USE_MAPRTICKET")) {
             String useMaprTValue = null;
             if (EDatabaseTypeName.HBASE.getDisplayName().equals(databaseType)) {
@@ -1710,6 +1687,15 @@ public class RepositoryToComponentProperty {
         if (value.equals("USE_DATANODE_HOSTNAME")) {
             String USE_DATANODE_HOSTNAME = connection.getParameters().get(ConnParameterKeys.CONN_PARA_KEY_USE_DATANODE_HOSTNAME);
             return USE_DATANODE_HOSTNAME == null ? null : "true".equals(USE_DATANODE_HOSTNAME);
+        }
+
+        if (value.equals("JDBC_URL")) {
+            DatabaseConnectionImpl db = (DatabaseConnectionImpl) connection;
+            if (db.getDatabaseType().equals("Redshift SSO")) {
+                return "SSO";
+            } else {
+                return "STANDARD";
+            }
         }
 
         return null;

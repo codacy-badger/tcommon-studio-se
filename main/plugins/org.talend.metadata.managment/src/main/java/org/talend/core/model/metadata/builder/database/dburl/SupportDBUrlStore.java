@@ -98,6 +98,7 @@ public final class SupportDBUrlStore {
         supportDBUrlMap.put(SupportDBUrlType.VERTICA2.getDBKey(), SupportDBUrlType.VERTICA2);
         supportDBUrlMap.put(SupportDBUrlType.IMPALA.getDBKey(), SupportDBUrlType.IMPALA);
         supportDBUrlMap.put(SupportDBUrlType.REDSHIFT.getDBKey(), SupportDBUrlType.REDSHIFT);
+        supportDBUrlMap.put(SupportDBUrlType.REDSHIFT_SSO.getDBKey(), SupportDBUrlType.REDSHIFT_SSO);
         supportDBUrlMap.put(SupportDBUrlType.EXASOL.getDBKey(), SupportDBUrlType.EXASOL);
 
         // MOD mzhao bug 12313, 2010-04-02 There is not dbType in prv files before 4.0 release, here use driver class
@@ -194,12 +195,8 @@ public final class SupportDBUrlStore {
      */
     public String getDBUrl(String dbType, String dbVersion, String host, String username, String password, String port,
             String dbName, String dataSource, String paramString) {
-        if (SupportDBUrlType.isMssql(dbType)) {
-            return DatabaseConnStrUtil.getURLString(dbType, dbVersion, host, username, password, port, dbName,
-                    StringUtils.EMPTY, StringUtils.EMPTY, StringUtils.EMPTY, paramString);
-        } else {
-            return getDBUrl(dbType, host, port, dbName, StringUtils.EMPTY, paramString);
-        }
+        return DatabaseConnStrUtil.getURLString(dbType, dbVersion, host, username, password, port, dbName,
+                StringUtils.EMPTY, StringUtils.EMPTY, StringUtils.EMPTY, paramString); // mysql oracle mssql is ok
     }
 
     /**

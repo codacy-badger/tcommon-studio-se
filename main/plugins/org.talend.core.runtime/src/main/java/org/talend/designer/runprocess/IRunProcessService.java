@@ -222,7 +222,11 @@ public interface IRunProcessService extends IService {
 
     boolean isExportConfig();
 
+    boolean isdebug();
+
     void generatePom(Item item);
+
+    void generatePom(Item item, int option);
 
     void initializeRootPoms(IProgressMonitor monitor);
 

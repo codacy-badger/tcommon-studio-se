@@ -18,15 +18,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.talend.commons.exception.PersistenceException;
 import org.talend.commons.utils.workbench.resources.ResourceUtils;
 import org.talend.core.model.properties.ImplicitContextSettings;
@@ -65,6 +70,12 @@ public class ProjectDataJsonProvider {
 
     public static final int CONTENT_ALL = 15;
 
+    public static String getRelationshipIndexPath() {
+        StringBuilder strBuilder = new StringBuilder();
+        strBuilder.append(FileConstants.SETTINGS_FOLDER_NAME).append("/").append(FileConstants.RELATIONSHIP_FILE_NAME); //$NON-NLS-1$
+        return strBuilder.toString();
+    }
+
     public static void saveProjectData(Project project) throws PersistenceException {
         saveProjectData(project, CONTENT_ALL);
     }
@@ -82,6 +93,60 @@ public class ProjectDataJsonProvider {
         if ((saveContent & CONTENT_MIGRATIONTASK) > 0) {
             saveMigrationTaskSetting(project);
         }
+        try {
+            ResourceUtils.getProject(project.getTechnicalLabel()).getFolder(FileConstants.SETTINGS_FOLDER_NAME).refreshLocal(1,
+                    null);
+        } catch (CoreException e) {
+            throw new PersistenceException(e);
+        }
+    }
+
+    public static void saveConfigComponent(String projectLabel, List<ComponentsJsonModel> componentJsons)
+            throws PersistenceException {
+        Collections.sort(componentJsons, new Comparator<ComponentsJsonModel>() {
+
+            @Override
+            public int compare(ComponentsJsonModel configTypeNode1, ComponentsJsonModel configTypeNode2) {
+                return configTypeNode1.getId().compareTo(configTypeNode2.getId());
+            }
+
+        });
+
+        File file = getSavingConfigurationFile(projectLabel, FileConstants.COMPONENT_FILE_NAME);
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, componentJsons);
+            ResourceUtils.getProject(projectLabel).getFolder(FileConstants.SETTINGS_FOLDER_NAME).refreshLocal(1, null);
+        } catch (Exception e) {
+            throw new PersistenceException(e);
+        }
+    }
+
+    public static Map<String, String[]> getLastConfigComponent(String projectLabel) throws PersistenceException {
+        Map<String, String[]> componentMap = new HashMap<>();
+        File file = getSavingConfigurationFile(projectLabel, FileConstants.COMPONENT_FILE_NAME);
+        TypeReference<List<ComponentsJsonModel>> typeReference = new TypeReference<List<ComponentsJsonModel>>() {
+        };
+        List<ComponentsJsonModel> componentsJsons = null;
+        if (file != null && file.exists()) {
+            try {
+                FileInputStream input = new FileInputStream(file);
+                componentsJsons = new ObjectMapper().readValue(input, typeReference);
+            } catch (IOException e) {
+                throw new PersistenceException(e);
+            }
+            if (componentsJsons != null && componentsJsons.size() > 0) {
+                for (ComponentsJsonModel component : componentsJsons) {
+                    String[] content = new String[] { component.getName(), component.getVersion(), component.getDisplayName() };
+                    componentMap.put(component.getId(), content);
+                }
+            }
+        }
+        
+        return componentMap;
     }
 
     public static void loadProjectData(Project project, IPath projectFolderPath, int loadContent) throws PersistenceException {
@@ -97,7 +162,7 @@ public class ProjectDataJsonProvider {
             RecycleBin recycleBin = RecycleBinManager.getInstance().getRecycleBin(project);
             project.getDeletedFolders().clear();
             for (int i = 0; i < recycleBin.getDeletedFolders().size(); i++) {
-                project.getDeletedFolders().add((String) recycleBin.getDeletedFolders().get(i));
+                project.getDeletedFolders().add(recycleBin.getDeletedFolders().get(i));
             }
         }
         if ((loadContent & CONTENT_MIGRATIONTASK) > 0) {
@@ -111,6 +176,9 @@ public class ProjectDataJsonProvider {
     
     public static void loadProjectData(Project project, IPath projectRootPath, InputStreamProvider inputStreamProvider)
             throws PersistenceException, IOException {
+        if (projectRootPath == null) {
+            projectRootPath = new Path("/");
+        }
         IPath settingFolderPath = projectRootPath.append(FileConstants.SETTINGS_FOLDER_NAME);
         IPath projectSettingPath = settingFolderPath.append(FileConstants.PROJECTSETTING_FILE_NAME);
         InputStream input = inputStreamProvider.getStream(projectSettingPath);
@@ -209,11 +277,21 @@ public class ProjectDataJsonProvider {
                 migrationTaskSetting = new ObjectMapper().readValue(input, MigrationTaskSetting.class);
             }
             if (migrationTaskSetting != null) {
-                project.getMigrationTask().clear();
+                MigrationTask fakeTask = createFakeMigrationTask();
+                List<MigrationTask> allRealTask = new ArrayList<MigrationTask>();
+                for (int i = 0; i < project.getMigrationTask().size(); i++) {
+                    MigrationTask task = (MigrationTask) project.getMigrationTask().get(i);
+                    if (!StringUtils.equals(fakeTask.getId(), task.getId())) {
+                        allRealTask.add(task);
+                    }
+                }
+                project.getMigrationTask().removeAll(allRealTask);
                 project.getMigrationTasks().clear();
                 if (migrationTaskSetting.getMigrationTaskList() != null) {
                     for (MigrationTaskJson json : migrationTaskSetting.getMigrationTaskList()) {
-                        project.getMigrationTask().add(json.toEmfObject());
+                        if (!StringUtils.equals(fakeTask.getId(), json.getId())) {
+                            project.getMigrationTask().add(json.toEmfObject());
+                        }
                     }
                 }
                 if (migrationTaskSetting.getMigrationTasksList() != null) {
@@ -397,6 +475,15 @@ public class ProjectDataJsonProvider {
                 project.getItemsRelations().add(json.toEmfObject());
             }
         }
+    }
+    
+    public static MigrationTask createFakeMigrationTask() {
+        MigrationTask fakeTask = PropertiesFactoryImpl.eINSTANCE.createMigrationTask();
+        fakeTask.setId("org.talend.repository.model.migration.CheckProductVersionMigrationTask");
+        fakeTask.setBreaks("7.1.0");
+        fakeTask.setVersion("7.1.1");
+        fakeTask.setStatus(MigrationStatus.DEFAULT_LITERAL);
+        return fakeTask;
     }
 }
 

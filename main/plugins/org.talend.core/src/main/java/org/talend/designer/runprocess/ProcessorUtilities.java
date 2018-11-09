@@ -68,6 +68,7 @@ import org.talend.core.model.general.Project;
 import org.talend.core.model.metadata.IMetadataColumn;
 import org.talend.core.model.metadata.IMetadataTable;
 import org.talend.core.model.metadata.MetadataTalendType;
+import org.talend.core.model.metadata.types.JavaTypesManager;
 import org.talend.core.model.process.EParameterFieldType;
 import org.talend.core.model.process.IContext;
 import org.talend.core.model.process.IElementParameter;
@@ -94,11 +95,13 @@ import org.talend.core.runtime.process.LastGenerationInfo;
 import org.talend.core.runtime.process.TalendProcessArgumentConstant;
 import org.talend.core.runtime.process.TalendProcessOptionConstants;
 import org.talend.core.runtime.repository.build.BuildExportManager;
+import org.talend.core.service.IResourcesDependenciesService;
 import org.talend.core.services.ISVNProviderService;
 import org.talend.core.ui.IJobletProviderService;
 import org.talend.core.ui.ITestContainerProviderService;
 import org.talend.core.utils.BitwiseOptionUtils;
 import org.talend.designer.core.IDesignerCoreService;
+import org.talend.designer.core.model.utils.emf.talendfile.ContextParameterType;
 import org.talend.designer.core.model.utils.emf.talendfile.ContextType;
 import org.talend.designer.core.model.utils.emf.talendfile.ElementParameterType;
 import org.talend.designer.core.model.utils.emf.talendfile.NodeType;
@@ -161,6 +164,8 @@ public class ProcessorUtilities {
     private static final Set<ModuleNeeded> retrievedJarsForCurrentBuild = new HashSet<ModuleNeeded>();
 
     private static final Set<String> esbJobs = new HashSet<String>();
+
+    private static boolean isDebug = false;
 
     public static void addOpenEditor(IEditorPart editor) {
         openedEditors.add(editor);
@@ -597,6 +602,8 @@ public class ProcessorUtilities {
          */
         generateBuildInfo(jobInfo, progressMonitor, isMainJob, currentProcess, currentJobName, processor, option);
 
+        copyDependenciedResources(currentProcess);
+
         return processor;
     }
 
@@ -786,8 +793,6 @@ public class ProcessorUtilities {
                 jobInfo.getProcessor().getSrcCodePath());
         jobInfo.setPomFile(pomFile);
         jobInfo.setCodeFile(codeFile);
-        jobInfo.setProcess(null);
-        jobInfo.setProcessor(null);
         progressMonitor.subTask(Messages.getString("ProcessorUtilities.finalizeBuild") + currentJobName); //$NON-NLS-1$
 
         final String timeMeasureGenerateCodesId = "Generate job source codes for " //$NON-NLS-1$
@@ -815,6 +820,12 @@ public class ProcessorUtilities {
                 CorePlugin.getDefault().getRunProcessService().checkLastGenerationHasCompilationError(true);
             }
         }
+
+        jobInfo.setProcess(null);
+        if (!isMainJob) {
+            jobInfo.getProcessor().unloadProcess();
+        }
+
         codeModified = false;
         if (isMainJob) {
             retrievedJarsForCurrentBuild.clear();
@@ -1018,14 +1029,6 @@ public class ProcessorUtilities {
             // processor.cleanBeforeGenerate(TalendProcessOptionConstants.CLEAN_JAVA_CODES
             // | TalendProcessOptionConstants.CLEAN_CONTEXTS | TalendProcessOptionConstants.CLEAN_DATA_SETS);
             jobInfo.setProcessor(processor);
-            JobInfo parentJob = jobInfo.getFatherJobInfo();
-            if (parentJob != null && (parentJob.getProcessor() != null)) {
-                for (JobInfo subJob : parentJob.getProcessor().getBuildChildrenJobs()) {
-                    if (subJob.getJobId().equals(jobInfo.getJobId())) {
-                        subJob.setProcessor(processor);
-                    }
-                }
-            }
             if (!timerStarted) {
                 idTimer = "generateCode for job: " + currentProcess.getName();
                 TimeMeasure.begin(idTimer);
@@ -1132,6 +1135,8 @@ public class ProcessorUtilities {
              */
             generateBuildInfo(jobInfo, progressMonitor, isMainJob, currentProcess, currentJobName, processor, option);
             TimeMeasure.step(idTimer, "generateBuildInfo");
+
+            copyDependenciedResources(currentProcess);
 
             return processor;
         } finally {
@@ -1261,6 +1266,71 @@ public class ProcessorUtilities {
             }
         }
 
+    }
+
+    /**
+     * For child job runtime resource file needed, copy the reource file to 'src\main\ext-resources' DOC jding Comment
+     * method "copyDependenciedResources".
+     * 
+     * @param currentProcess
+     */
+    private static void copyDependenciedResources(IProcess currentProcess) {
+        if (!(currentProcess instanceof IProcess2)) {
+            return;
+        }
+        IProcess2 process = (IProcess2) currentProcess;
+        if (GlobalServiceRegister.getDefault().isServiceRegistered(IResourcesDependenciesService.class)) {
+            IResourcesDependenciesService resourcesService = (IResourcesDependenciesService) GlobalServiceRegister.getDefault()
+                    .getService(IResourcesDependenciesService.class);
+            if (resourcesService == null) {
+                return;
+            }
+            Item rootItem = process.getProperty().getItem();
+            Set<JobInfo> childrenJobInfo = getChildrenJobInfo(rootItem, false);
+            for (JobInfo jobInfo : childrenJobInfo) {
+                Property property = jobInfo.getProcessItem().getProperty();
+                
+                Set<String> resourceList = new HashSet<String>();
+                List<ContextType> contexts = jobInfo.getProcessItem().getProcess().getContext();
+                for (ContextType context : contexts) {
+                    List<ContextParameterType> contextParameter = context.getContextParameter();
+                    for (ContextParameterType contextParameterType : contextParameter) {
+                        if (JavaTypesManager.RESOURCE.getId().equals(contextParameterType.getType())
+                                || JavaTypesManager.RESOURCE.getLabel().equals(contextParameterType.getType())) {
+                            resourceList.add(contextParameterType.getValue());
+                        }
+                    }
+                }
+                if (resourceList.isEmpty()) {
+                    continue;
+                }
+                try {
+                    for (String res : resourceList) {
+                        String[] parts = res.split("\\|");
+                        if (parts.length > 1) {
+                            IRepositoryViewObject repoObject = null;
+                            if (RelationshipItemBuilder.LATEST_VERSION.equals(parts[1])) {
+                                repoObject = ProxyRepositoryFactory.getInstance().getLastVersion(parts[0]);
+                            } else {
+                                repoObject = ProxyRepositoryFactory.getInstance().getSpecificVersion(parts[0], parts[1], true);
+                            }
+                            if (repoObject != null) {
+                                StringBuffer rootjoblabel = new StringBuffer();
+                                if (StringUtils.isNotBlank(rootItem.getState().getPath())) {
+                                    rootjoblabel.append(rootItem.getState().getPath() + "/");
+                                }
+                                rootjoblabel
+                                        .append(rootItem.getProperty().getLabel() + "_" + rootItem.getProperty().getVersion());
+                                resourcesService.copyToExtResourceFolder(repoObject, property.getId(), property.getVersion(),
+                                        parts[1], rootjoblabel.toString());
+                            }
+                        }
+                    }
+                } catch (PersistenceException e) {
+                    log.error(e);
+                }
+            }
+        }
     }
 
     /**
@@ -2420,6 +2490,14 @@ public class ProcessorUtilities {
             return true;
         }
         return false;
+    }
+
+    public static void setDebug(boolean debug) {
+        isDebug = debug;
+    }
+
+    public static boolean isdebug() {
+        return isDebug;
     }
 
 }

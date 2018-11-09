@@ -1340,16 +1340,16 @@ public final class DBConnectionContextUtils {
             return cloneConn;
         }// ~
 
-        if (dbConn.getURL() != null && !dbConn.getURL().equals("")) { //$NON-NLS-1$
-            // for general db, url is given directly.
+        if (dbConn.getURL() != null && !dbConn.getURL().equals("") && EDatabaseTypeName.GENERAL_JDBC
+                .equals(EDatabaseTypeName.getTypeFromDbType(dbConn.getDatabaseType()))) { //$NON-NLS-1$
             cloneConn.setURL(url);
-        } else {
-            String newURL =
-                    DatabaseConnStrUtil.getURLString(cloneConn.getDatabaseType(), dbConn.getDbVersionString(), server,
-                            username, password, port, sidOrDatabase, filePath.toLowerCase(), datasource, dbRootPath,
-                            additionParam);
-            cloneConn.setURL(newURL);
+            return cloneConn;
         }
+        String newURL =
+                DatabaseConnStrUtil.getURLString(cloneConn.getDatabaseType(), dbConn.getDbVersionString(), server,
+                        username, password, port, sidOrDatabase, filePath.toLowerCase(), datasource, dbRootPath,
+                        additionParam);
+        cloneConn.setURL(newURL);
         return cloneConn;
     }
 

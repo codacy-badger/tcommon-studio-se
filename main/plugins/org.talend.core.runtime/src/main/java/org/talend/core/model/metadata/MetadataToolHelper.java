@@ -37,6 +37,7 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.PersistenceException;
 import org.talend.commons.runtime.model.components.IComponentConstants;
 import org.talend.commons.runtime.model.repository.ERepositoryStatus;
@@ -242,6 +243,11 @@ public final class MetadataToolHelper {
         } else {
             return value.equals(ContextParameterJavaTypeManager.PERL_FILE);
         }
+    }
+
+    public static boolean isResource(final String value) {
+        ECodeLanguage codeLanguage = LanguageManager.getCurrentLanguage();
+        return value.equals(JavaTypesManager.RESOURCE.getId());
     }
 
     public static boolean isPassword(final String value) {
@@ -739,7 +745,7 @@ public final class MetadataToolHelper {
             }
             Set<MetadataTable> tables = null;
             IGenericWizardService wizardService = null;
-            if (GlobalServiceRegister.getDefault().isServiceRegistered(IGenericWizardService.class)) {
+            if (!CommonsPlugin.isHeadless() && GlobalServiceRegister.getDefault().isServiceRegistered(IGenericWizardService.class)) {
                 wizardService = (IGenericWizardService) GlobalServiceRegister.getDefault()
                         .getService(IGenericWizardService.class);
             }

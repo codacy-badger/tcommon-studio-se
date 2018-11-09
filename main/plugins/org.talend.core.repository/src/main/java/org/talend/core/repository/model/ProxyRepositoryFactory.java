@@ -66,6 +66,7 @@ import org.talend.commons.exception.LoginException;
 import org.talend.commons.exception.PersistenceException;
 import org.talend.commons.exception.SystemException;
 import org.talend.commons.runtime.model.repository.ERepositoryStatus;
+import org.talend.commons.runtime.service.ITaCoKitService;
 import org.talend.commons.ui.runtime.CommonUIPlugin;
 import org.talend.commons.ui.runtime.exception.MessageBoxExceptionHandler;
 import org.talend.commons.utils.data.container.RootContainer;
@@ -125,7 +126,6 @@ import org.talend.core.repository.utils.XmiResourceManager;
 import org.talend.core.runtime.CoreRuntimePlugin;
 import org.talend.core.runtime.repository.item.ItemProductKeys;
 import org.talend.core.runtime.services.IMavenUIService;
-import org.talend.core.runtime.services.ITaCoKitService;
 import org.talend.core.runtime.util.ItemDateParser;
 import org.talend.core.runtime.util.JavaHomeUtil;
 import org.talend.core.service.ICoreUIService;
@@ -638,13 +638,17 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
             throw new PersistenceException(Messages.getString("ProxyRepositoryFactory.MoveFolderContainsLockedItem")); //$NON-NLS-1$
         }
         this.repositoryFactoryFromProvider.moveFolder(type, sourcePath, targetPath);
-        if (type == ERepositoryObjectType.PROCESS) {
-            fireRepositoryPropertyChange(ERepositoryActionName.FOLDER_MOVE.getName(), new IPath[] { sourcePath, targetPath },
-                    type);
-        }
-        if (ERepositoryObjectType.getAllTypesOfJoblet().contains(type)) {
-            fireRepositoryPropertyChange(ERepositoryActionName.JOBLET_FOLDER_MOVE.getName(),
-                    new IPath[] { sourcePath, targetPath }, type);
+        if (type != null) {
+            /*
+             * MUST check joblet first, since getAllTypesOfProcess2 contains joblet
+             */
+            if (ERepositoryObjectType.getAllTypesOfJoblet().contains(type)) {
+                fireRepositoryPropertyChange(ERepositoryActionName.JOBLET_FOLDER_MOVE.getName(),
+                        new IPath[] { sourcePath, targetPath }, type);
+            } else if (ERepositoryObjectType.getAllTypesOfProcess2().contains(type)) {
+                fireRepositoryPropertyChange(ERepositoryActionName.FOLDER_MOVE.getName(), new IPath[] { sourcePath, targetPath },
+                        type);
+            }
         }
         this.repositoryFactoryFromProvider.updateItemsPath(type, targetPath.append(sourcePath.lastSegment()));
     }
@@ -1101,6 +1105,7 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
 
     }
 
+    @Override
     public IRepositoryViewObject getLastRefVersion(Project project, String id) throws PersistenceException {
         IRepositoryViewObject lastVersion = getLastVersion(project, id);
         if (lastVersion == null) {
@@ -1508,7 +1513,7 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
     }
 
     public Property reload(Property property, IFile file) throws PersistenceException {
-        return this.repositoryFactoryFromProvider.reload(property);
+        return this.repositoryFactoryFromProvider.reload(property, file);
     }
 
     /*
@@ -1949,7 +1954,7 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
                     currentMonitor = subMonitor.newChild(1, SubMonitor.SUPPRESS_NONE);
                     currentMonitor.beginTask(Messages.getString("ProxyRepositoryFactory.synchronizeLibraries"), 1); //$NON-NLS-1$
                     coreService.syncLibraries(currentMonitor);
-                    TimeMeasure.step("SyncLibraries", "sync components libraries"); //$NON-NLS-1$
+                    TimeMeasure.step("logOnProject", "Sync components libraries"); //$NON-NLS-1$
                 }
 
                 currentMonitor = subMonitor.newChild(1, SubMonitor.SUPPRESS_NONE);
@@ -2083,17 +2088,16 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
                     }
                 }
 
-                if (GlobalServiceRegister.getDefault().isServiceRegistered(ITaCoKitService.class)) {
-                    /**
-                     * Execute TaCoKit migration before fullLogonFinished
-                     */
-                    ITaCoKitService tacokitService = (ITaCoKitService) GlobalServiceRegister.getDefault()
-                            .getService(ITaCoKitService.class);
-                    try {
+                /**
+                 * Execute TaCoKit migration before fullLogonFinished
+                 */
+                try {
+                    ITaCoKitService tacokitService = ITaCoKitService.getInstance();
+                    if (tacokitService != null && tacokitService.isNeedMigration(project.getTechnicalLabel())) {
                         tacokitService.checkMigration(monitor);
-                    } catch (Exception e) {
-                        ExceptionHandler.process(e);
                     }
+                } catch (Exception e) {
+                    ExceptionHandler.process(e);
                 }
                 fullLogonFinished = true;
                 this.repositoryFactoryFromProvider.afterLogon(monitor);
@@ -2121,9 +2125,9 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
     }
 
     private void checkReferenceProjectsProblems(Project project) throws BusinessException, PersistenceException {
-        if (ReferenceProjectProblemManager.getInstance().getInvalidProjectReferenceSet().size() > 0) {
+        if (ReferenceProjectProblemManager.getInstance().getAllInvalidProjectReferenceSet().size() > 0) {
             StringBuffer sb = new StringBuffer();
-            for (String technicalLabel : ReferenceProjectProblemManager.getInstance().getInvalidProjectReferenceSet()) {
+            for (String technicalLabel : ReferenceProjectProblemManager.getInstance().getAllInvalidProjectReferenceSet()) {
                 if (sb.length() > 0) {
                     sb.append(",");
                 }

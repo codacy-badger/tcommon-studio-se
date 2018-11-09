@@ -173,6 +173,10 @@ public class DBConnectionFillerImpl extends MetadataFillerImpl<DatabaseConnectio
                 if (isRedshift) {
                     productName = EDatabaseTypeName.REDSHIFT.getDisplayName();
                 }
+                boolean isRedshift_SSO = dbconn.getDatabaseType().equals(EDatabaseTypeName.REDSHIFT_SSO.getDisplayName());
+                if (isRedshift_SSO) {
+                    productName = EDatabaseTypeName.REDSHIFT_SSO.getDisplayName();
+                }
                 // ~
                 TaggedValueHelper.setTaggedValue(dbconn, TaggedValueHelper.DB_PRODUCT_NAME, productName);
                 TaggedValueHelper.setTaggedValue(dbconn, TaggedValueHelper.DB_PRODUCT_VERSION, productVersion);
@@ -1023,8 +1027,7 @@ public class DBConnectionFillerImpl extends MetadataFillerImpl<DatabaseConnectio
 
                 metadatatable.setName(tableName);
                 // Added by Marvin Wang on Feb. 6, 2012 for bug TDI-24413, it is just for hive external table.
-                if (ETableTypes.TABLETYPE_EXTERNAL_TABLE.getName().equals(temptableType)
-                        || ETableTypes.EXTERNAL_TABLE.getName().equals(temptableType)
+                if (ETableTypes.EXTERNAL_TABLE.getName().equals(temptableType)
                         || ETableTypes.MANAGED_TABLE.getName().equals(temptableType)
                         || ETableTypes.INDEX_TABLE.getName().equals(temptableType)
                         || ETableTypes.TABLETYPE_BASE_TABLE.getName().equals(temptableType)) {

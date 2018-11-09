@@ -3858,6 +3858,7 @@ public class DatabaseForm extends AbstractForm {
 
     private List<String> getSybaseVersionDrivers(String dbType) {
         List<String> result = new ArrayList<String>();
+        result.add(EDatabaseVersion4Drivers.SYBASEIQ_16_SA.getVersionDisplay());
         result.add(EDatabaseVersion4Drivers.SYBASEIQ_16.getVersionDisplay());
         result.add(EDatabaseVersion4Drivers.SYBASEASE.getVersionDisplay());
 
@@ -4362,6 +4363,7 @@ public class DatabaseForm extends AbstractForm {
                 || EDatabaseConnTemplate.PSQL.getDBDisplayName().equals(getConnectionDBType())
                 || EDatabaseConnTemplate.MSSQL.getDBDisplayName().equals(getConnectionDBType())
                 || EDatabaseConnTemplate.SYBASEASE.getDBDisplayName().equals(getConnectionDBType())
+                || EDatabaseConnTemplate.SYBASEASE_16_SA.getDBDisplayName().equals(getConnectionDBType())
                 || EDatabaseConnTemplate.IMPALA.getDBDisplayName().equals(getConnectionDBType());
     }
 
@@ -4448,7 +4450,7 @@ public class DatabaseForm extends AbstractForm {
                         index = 3;
                         if (s[index] != "") { //$NON-NLS-1$
                             if (selection.equals(EDatabaseConnTemplate.AS400.getDBDisplayName())
-                                    || selection.equals(EDatabaseConnTemplate.REDSHIFT.getDBDisplayName())) {
+                                    || selection.equals(EDatabaseConnTemplate.REDSHIFT.getDBDisplayName())|| selection.equals(EDatabaseConnTemplate.REDSHIFT_SSO.getDBDisplayName())) {
                                 sidOrDatabaseText.setText(s[index]);
                                 getConnection().setSID(s[index]);
                             }
@@ -4640,7 +4642,6 @@ public class DatabaseForm extends AbstractForm {
                 }
             }
         });
-
         // sidOrDatabaseText : Event modifyText
         sidOrDatabaseText.addModifyListener(new ModifyListener() {
 
@@ -4714,7 +4715,16 @@ public class DatabaseForm extends AbstractForm {
                 if (!isContextMode()) {
                     EDatabaseVersion4Drivers version = EDatabaseVersion4Drivers.indexOfByVersionDisplay(dbVersionCombo.getText());
                     if (version != null) {
+                    	if(EDatabaseTypeName.SYBASEASE.getDisplayName().equals(getConnectionDBType())) {
+                    		if(version.getVersionValue().equals( EDatabaseVersion4Drivers.SYBASEIQ_16_SA.getVersionValue())) {
+                        		portText.setText(EDatabaseConnTemplate.SYBASEASE_16_SA.getDefaultPort());
+                        	}else {
+                        		portText.setText(EDatabaseConnTemplate.SYBASEASE.getDefaultPort());
+                        	}
+                    	}
+                    	
                         getConnection().setDbVersionString(version.getVersionValue());
+                       
                     }
                     urlConnectionStringText.setText(getStringConnection());
                     checkFieldsValue();
@@ -4725,7 +4735,7 @@ public class DatabaseForm extends AbstractForm {
             }
         });
         hideDbVersion();
-
+        hidePasswordAndName();
         // additional parameters: Event modifyText
         additionParamText.addModifyListener(new ModifyListener() {
 
@@ -5032,6 +5042,7 @@ public class DatabaseForm extends AbstractForm {
             checkDatabaseProperties();
             checkFieldsValue();
             hideDbVersion();
+            hidePasswordAndName();
             // see bug 0005237: Create DB Connection issue.
             if (!schemaText.getEditable()) {
                 schemaText.setText(""); //$NON-NLS-1$
@@ -5210,7 +5221,13 @@ public class DatabaseForm extends AbstractForm {
     private void modifyFieldValue() {
         checkFieldsValue();
     }
+    private void hidePasswordAndName(){
+    	if(asRedshiftSSOVersionEnable()) {
+    	    	 passwordText.hide();
+    	         usernameText.hide();
+    	}
 
+    }
     /**
      * DOC YeXiaowei Comment method "hideDbVersion".
      */
@@ -5221,7 +5238,6 @@ public class DatabaseForm extends AbstractForm {
         List<String> items = getVersionDrivers(dbType);
         String[] versions = new String[items.size()];
         items.toArray(versions);
-
         boolean isOracle = oracleVersionEnable();
         boolean isAS400 = as400VersionEnable();
         boolean isMySQL = asMySQLVersionEnable();
@@ -5274,6 +5290,9 @@ public class DatabaseForm extends AbstractForm {
         } else if (dbType.equals(EDatabaseConnTemplate.SAPHana.getDBDisplayName())) {
             dbVersionCombo.getCombo().setItems(versions);
             dbVersionCombo.setHideWidgets(!isSAPHana);
+        }else if (dbType.equals(EDatabaseConnTemplate.SYBASEASE_16_SA.getDBDisplayName())) {
+            dbVersionCombo.getCombo().setItems(versions);
+            dbVersionCombo.setHideWidgets(!isSybase);
         }
         if (selectedVersion != null && !"".equals(selectedVersion)) { //$NON-NLS-1$
             EDatabaseVersion4Drivers version = EDatabaseVersion4Drivers.indexOfByVersion(selectedVersion);
@@ -6215,6 +6234,7 @@ public class DatabaseForm extends AbstractForm {
                                 .getDBDisplayName().equals(getConnectionDBType())));
         usernameText.setEditable(visible);
         passwordText.setEditable(visible);
+       
         serverText.setEditable(false);
         portText.setEditable(false);
         sidOrDatabaseText.setEditable(false);
@@ -6579,6 +6599,10 @@ public class DatabaseForm extends AbstractForm {
                 schemaText.hide();
             }
         }
+        if(asRedshiftSSOVersionEnable()) {
+           passwordText.hide();
+           usernameText.hide();
+       }
         doHiveUIContentsLayout();
         hbaseSettingGroup.layout();
         maprdbSettingGroup.layout();
@@ -6824,7 +6848,14 @@ public class DatabaseForm extends AbstractForm {
         return template != null && template == EDatabaseConnTemplate.SYBASEASE
                 && LanguageManager.getCurrentLanguage().equals(ECodeLanguage.JAVA);
     }
-
+    private boolean asRedshiftSSOVersionEnable() {
+        if (getConnectionDBType().length() <= 0) {
+            return false;
+        }
+        EDatabaseConnTemplate template = EDatabaseConnTemplate.indexOfTemplate(getConnectionDBType());
+        return template != null && template == EDatabaseConnTemplate.REDSHIFT_SSO
+                && LanguageManager.getCurrentLanguage().equals(ECodeLanguage.JAVA);
+    }
     /**
      * 
      * DOC hwang Comment method "sasVersionEnable".

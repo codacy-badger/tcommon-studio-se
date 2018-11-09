@@ -112,6 +112,7 @@ public final class ConnectionUtils {
                     connection = driver.connect(url, props);
                 } catch (Exception exception) {
                     log.info(exception);
+                    throw new RuntimeException(exception);
                 }
             }
         } else {
@@ -515,5 +516,18 @@ public final class ConnectionUtils {
             log.warn(e);
         }
         return false;
+    }
+
+    public static boolean isMysql(DatabaseMetaData metadata) throws SQLException {
+        boolean result = false;
+        try {
+            if (metadata != null && metadata.getDriverName() != null && metadata.getDatabaseProductName() != null
+                    && metadata.getDatabaseProductName().toUpperCase().indexOf("MYSQL") > -1) { //$NON-NLS-1$
+                result = true;
+            }
+        } catch (SQLException e) {
+            result = false;
+        }
+        return result;
     }
 }

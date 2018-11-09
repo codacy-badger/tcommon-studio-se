@@ -55,8 +55,6 @@ import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 import org.eclipse.core.runtime.CoreException;
-import org.talend.core.nexus.ArtifactRepositoryBean;
-import org.talend.core.nexus.TalendLibsServerManager;
 import org.talend.designer.maven.aether.DummyDynamicMonitor;
 import org.talend.designer.maven.aether.IDynamicMonitor;
 import org.talend.designer.maven.aether.node.DependencyNode;
@@ -81,12 +79,19 @@ public class DynamicDistributionAetherUtils {
 
         String groupId = dependencyNode.getGroupId();
         String artifactId = dependencyNode.getArtifactId();
+        String extension = dependencyNode.getExtension();
         String classifier = dependencyNode.getClassifier();
         String version = dependencyNode.getVersion();
         String scope = dependencyNode.getScope();
 
         if (scope == null) {
             scope = JavaScopes.COMPILE;
+        }
+        if (StringUtils.isBlank(extension)) {
+            extension = null;
+        }
+        if (StringUtils.isBlank(classifier)) {
+            classifier = null;
         }
 
         String key = remoteUrl + " | " + localPath; //$NON-NLS-1$
@@ -104,7 +109,7 @@ public class DynamicDistributionAetherUtils {
         updateDependencySelector((DefaultRepositorySystemSession) session, monitor);
 
         org.eclipse.aether.graph.Dependency dependency = new org.eclipse.aether.graph.Dependency(
-                new DefaultArtifact(groupId, artifactId, classifier, null, version), scope);
+                new DefaultArtifact(groupId, artifactId, classifier, extension, version), scope);
 
         List<ExclusionNode> exclusionNodes = dependencyNode.getExclusions();
         if (exclusionNodes != null && !exclusionNodes.isEmpty()) {
@@ -125,26 +130,9 @@ public class DynamicDistributionAetherUtils {
         }
         RemoteRepository central = builder.build();
 
-        /**
-         * Some repositories like Hortonworks don't contain some essential artifacts like org.apache:apache:pom:18<br/>
-         * So add one more talend repository to avoid this problem, but talend repository CAN'T be the download url!(not
-         * support yet)
-         */
-        ArtifactRepositoryBean talendArtifactServer = TalendLibsServerManager.getInstance().getTalentArtifactServer();
-        Builder talendRepoBuilder = new RemoteRepository.Builder("talend", "default", //$NON-NLS-1$ //$NON-NLS-2$
-                talendArtifactServer.getRepositoryURL());
-        String talendUsername = talendArtifactServer.getUserName();
-        if (StringUtils.isNotBlank(talendUsername)) {
-            Authentication talendAuth = new AuthenticationBuilder().addUsername(talendUsername)
-                    .addPassword(talendArtifactServer.getPassword()).build();
-            talendRepoBuilder = talendRepoBuilder.setAuthentication(talendAuth);
-        }
-        RemoteRepository talendRepo = talendRepoBuilder.build();
-
         CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(dependency);
         collectRequest.addRepository(central);
-        collectRequest.addRepository(talendRepo);
 
         checkCancelOrNot(monitor);
         monitor.writeMessage("\n\n=== Start to collect dependecies of " + dependency.toString() + " ===\n");

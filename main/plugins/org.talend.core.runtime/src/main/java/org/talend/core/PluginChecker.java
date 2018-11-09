@@ -123,6 +123,10 @@ public class PluginChecker {
 
     public static final String IPAAS_PLUGIN_ID = "org.talend.designer.components.ipaas"; //$NON-NLS-1$
 
+    public static final String ESBSE_PLUGIN_ID = "org.talend.camel.designer"; //$NON-NLS-1$
+
+    public static final String DOCKER_PLUGIN_ID = "org.talend.designer.docker"; //$NON-NLS-1$
+
     /**
      * Check if specific plug-in is loaded.
      * 
@@ -278,6 +282,10 @@ public class PluginChecker {
         return isPluginLoaded(RUNREMOTE_PLUGIN_ID);
     }
 
+    public static boolean isDockerPluginLoaded() {
+        return isPluginLoaded(DOCKER_PLUGIN_ID);
+    }
+
     public static boolean isIPaasPluginLoaded() {
         return isPluginLoaded(IPAAS_PLUGIN_ID);
     }
@@ -349,6 +357,10 @@ public class PluginChecker {
 
     public static boolean isRouteletLoaded() {
         return isPluginLoaded(ROUTELET_PLUGIN_ID);
+    }
+
+    public static boolean isESBSELoaded() {
+        return isPluginLoaded(ESBSE_PLUGIN_ID);
     }
 
     public static String getBundlePath(String bundleName) {
