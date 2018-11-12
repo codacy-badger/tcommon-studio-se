@@ -793,8 +793,6 @@ public class ProcessorUtilities {
                 jobInfo.getProcessor().getSrcCodePath());
         jobInfo.setPomFile(pomFile);
         jobInfo.setCodeFile(codeFile);
-        jobInfo.setProcess(null);
-        jobInfo.setProcessor(null);
         progressMonitor.subTask(Messages.getString("ProcessorUtilities.finalizeBuild") + currentJobName); //$NON-NLS-1$
 
         final String timeMeasureGenerateCodesId = "Generate job source codes for " //$NON-NLS-1$
@@ -822,6 +820,12 @@ public class ProcessorUtilities {
                 CorePlugin.getDefault().getRunProcessService().checkLastGenerationHasCompilationError(true);
             }
         }
+
+        jobInfo.setProcess(null);
+        if (!isMainJob && jobInfo.isNeedUnloadProcessor()) {
+            jobInfo.getProcessor().unloadProcess();
+        }
+
         codeModified = false;
         if (isMainJob) {
             retrievedJarsForCurrentBuild.clear();
@@ -1397,6 +1401,19 @@ public class ProcessorUtilities {
                             continue;
                         }
                     }
+                    // if subjob is set as independent job or use dynamic jobs , don't unload the process after code
+                    // generated
+                    boolean needUnload = false;
+                    if (componentName.equals("tRunJob")) {
+                        IElementParameter independentParam = node.getElementParameter("USE_INDEPENDENT_PROCESS");
+                        boolean isIndependentSubjob = independentParam == null ? false
+                                : Boolean.valueOf(String.valueOf(independentParam.getValue()));
+                        IElementParameter dynamicParam = node.getElementParameter("USE_DYNAMIC_JOB");
+                        isIndependentSubjob = isIndependentSubjob
+                                || (dynamicParam == null ? false : Boolean.valueOf(String.valueOf(dynamicParam.getValue())));
+                        needUnload = !isIndependentSubjob;
+                    }
+
                     // IElementParameter indepPara = node.getElementParameter("USE_INDEPENDENT_PROCESS");
                     boolean isNeedLoadmodules = true;
                     // if (indepPara != null) {
@@ -1410,6 +1427,7 @@ public class ProcessorUtilities {
                             String context = (String) node.getElementParameter("PROCESS_TYPE_CONTEXT").getValue(); //$NON-NLS-1$
                             String version = (String) node.getElementParameter("PROCESS_TYPE_VERSION").getValue(); //$NON-NLS-1$
                             final JobInfo subJobInfo = new JobInfo(jobId, context, version);
+                            subJobInfo.setNeedUnloadProcessor(needUnload);
                             // get processitem from job
                             final ProcessItem processItem = ItemCacheManager.getProcessItem(jobId, version);
 
