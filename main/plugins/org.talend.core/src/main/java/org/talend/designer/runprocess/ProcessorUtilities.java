@@ -41,7 +41,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.common.util.EMap;
 import org.eclipse.ui.IEditorPart;
 import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.CommonExceptionHandler;
@@ -508,7 +507,6 @@ public class ProcessorUtilities {
             mainRelation.setId(jobInfo.getJobId());
             mainRelation.setVersion(jobInfo.getJobVersion());
             mainRelation.setType(RelationshipItemBuilder.JOB_RELATION);
-            mainRelation.setProjectLabel(jobInfo.getProjectLabel());
             hasLoopDependency = checkLoopDependencies(mainRelation);
             // clean the previous code in case it has deleted subjob
             cleanSourceFolder(progressMonitor, currentProcess, processor);
@@ -975,11 +973,11 @@ public class ProcessorUtilities {
             String currentJobName = null;
             if (selectedProcessItem == null && jobInfo.getJobVersion() == null) {
                 // child job
-                selectedProcessItem = ItemCacheManager.getProcessItem(ProcessUtils.getProjectProcessId(jobInfo.getProjectLabel(), jobInfo.getJobId()));
+                selectedProcessItem = ItemCacheManager.getProcessItem(jobInfo.getJobId());
             }
 
             if (selectedProcessItem == null && jobInfo.getJobVersion() != null) {
-                selectedProcessItem = ItemCacheManager.getProcessItem(ProcessUtils.getProjectProcessId(jobInfo.getProjectLabel(), jobInfo.getJobId()), jobInfo.getJobVersion());
+                selectedProcessItem = ItemCacheManager.getProcessItem(jobInfo.getJobId(), jobInfo.getJobVersion());
                 jobInfo.setProcessItem(selectedProcessItem);
             }
 
@@ -1030,7 +1028,7 @@ public class ProcessorUtilities {
             JobInfo parentJob = jobInfo.getFatherJobInfo();
             if (parentJob != null && (parentJob.getProcessor() != null)) {
                 for (JobInfo subJob : parentJob.getProcessor().getBuildChildrenJobs()) {
-                    if (subJob.getJobId().equals(jobInfo.getJobId())) {
+                    if (ProcessUtils.isSameProperty(subJob.getJobId(), jobInfo.getJobId(), false)) {
                         subJob.setProcessor(processor);
                     }
                 }
@@ -1351,7 +1349,6 @@ public class ProcessorUtilities {
         }
         JobInfo generatedJobInfo = new JobInfo(jobInfo.getJobId(), jobInfo.getContextName(), jobInfo.getJobVersion());
         generatedJobInfo.setJobName(jobInfo.getJobName());
-        generatedJobInfo.setProjectLabel(jobInfo.getProjectLabel());
         generatedJobInfo.setTestContainer(jobInfo.isTestContainer());
         generatedJobInfo.setFatherJobInfo(cloneJobInfo(jobInfo.getFatherJobInfo()));
         generatedJobInfo.setProcessor(jobInfo.getProcessor());
@@ -1412,13 +1409,7 @@ public class ProcessorUtilities {
                         if (StringUtils.isNotEmpty(jobId)) {
                             String context = (String) node.getElementParameter("PROCESS_TYPE_CONTEXT").getValue(); //$NON-NLS-1$
                             String version = (String) node.getElementParameter("PROCESS_TYPE_VERSION").getValue(); //$NON-NLS-1$
-                            String projectLabel = ProcessUtils.getProjectLabelFromItemId(jobId);
-                            String pureJobId = jobId;
-                            if (projectLabel != null) {
-                                pureJobId = ProcessUtils.getPureItemId(jobId);
-                            }
-                            final JobInfo subJobInfo = new JobInfo(pureJobId, context, version);
-                            subJobInfo.setProjectLabel(projectLabel);
+                            final JobInfo subJobInfo = new JobInfo(jobId, context, version);
                             // get processitem from job
                             final ProcessItem processItem = ItemCacheManager.getProcessItem(jobId, version);
 
@@ -2203,8 +2194,9 @@ public class ProcessorUtilities {
                         ProcessItem processItem = ItemCacheManager.getProcessItem(jobId, jobVersion);
                         if (processItem != null) {
                             JobInfo jobInfo = new JobInfo(processItem, jobContext);
+                            jobInfo.setJobId(jobId);
                             if (!jobInfos.contains(jobInfo)) {
-                                jobInfos.add(jobInfo);
+                                jobInfos.add(jobInfo);                                
                                 jobInfo.setFatherJobInfo(parentJobInfo);
                                 if (!firstChildOnly) {
                                     getAllJobInfo(processItem.getProcess(), jobInfo, jobInfos, firstChildOnly);
@@ -2401,10 +2393,6 @@ public class ProcessorUtilities {
         return null;
     }
     
-    public static boolean isNeedProjectProcessId(Item processItem) {
-        return true;
-    }
-
     public static File getJavaProjectLibFolder() {
         if (GlobalServiceRegister.getDefault().isServiceRegistered(IRunProcessService.class)) {
             IRunProcessService processService =
@@ -2515,5 +2503,12 @@ public class ProcessorUtilities {
     public static boolean isdebug() {
         return isDebug;
     }
+    
+    public static boolean isNeedProjectProcessId(String componentName) {
+      if ("tRunJob".equalsIgnoreCase(componentName) || "cTalendJob".equalsIgnoreCase(componentName)) { //$NON-NLS-1$
+          return true;
+      }
+      return false;
+  }
 
 }

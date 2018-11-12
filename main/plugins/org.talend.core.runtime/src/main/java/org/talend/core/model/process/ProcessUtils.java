@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.emf.common.util.EList;
 import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.exception.PersistenceException;
 import org.talend.commons.utils.VersionUtils;
@@ -54,7 +53,6 @@ import org.talend.core.utils.BitwiseOptionUtils;
 import org.talend.designer.core.IDesignerCoreService;
 import org.talend.designer.core.model.utils.emf.talendfile.ContextParameterType;
 import org.talend.designer.core.model.utils.emf.talendfile.ContextType;
-import org.talend.designer.core.model.utils.emf.talendfile.ElementParameterType;
 import org.talend.designer.core.model.utils.emf.talendfile.MetadataType;
 import org.talend.designer.core.model.utils.emf.talendfile.NodeType;
 import org.talend.designer.core.model.utils.emf.talendfile.ProcessType;
@@ -977,16 +975,17 @@ public final class ProcessUtils {
     }
 
     public static String getPureItemId(Object objectId) {
-        if (objectId != null) {
-            String stringValue = objectId.toString();
-            if (stringValue.indexOf(PROJECT_ID_SEPARATOR) > 0) {
-                String[] array = stringValue.split(PROJECT_ID_SEPARATOR);
-                if (array.length == 2) {
-                    return array[1];
-                }
+        if (objectId == null) {
+            return null;
+        }
+        String stringValue = objectId.toString();
+        if (stringValue.indexOf(PROJECT_ID_SEPARATOR) > 0) {
+            String[] array = stringValue.split(PROJECT_ID_SEPARATOR);
+            if (array.length == 2) {
+                return array[1];
             }
         }
-        return null;
+        return stringValue;
     }
 
     public static String getProjectLabelFromItemId(String id) {
@@ -1000,7 +999,8 @@ public final class ProcessUtils {
     }
 
     public static String getProjectProcessId(String projectLabel, String id) {
-        if (StringUtils.isNotEmpty(projectLabel)) {
+        if (StringUtils.isNotEmpty(projectLabel)
+                && !StringUtils.equals(ProjectManager.getInstance().getCurrentProject().getTechnicalLabel(), projectLabel)) {
             StringBuffer sb = new StringBuffer();
             sb.append(projectLabel);
             sb.append(PROJECT_ID_SEPARATOR);
@@ -1009,6 +1009,64 @@ public final class ProcessUtils {
         }
         return id;
     }
-    
 
+    public static String getProjectProcessLabel(String projectLabel, String itemLabel) {
+        if (StringUtils.isNotEmpty(projectLabel)
+                && !StringUtils.equals(ProjectManager.getInstance().getCurrentProject().getTechnicalLabel(), projectLabel)) {
+            StringBuffer sb = new StringBuffer();
+            sb.append(projectLabel);
+            sb.append(PROJECT_ID_SEPARATOR);
+            sb.append(itemLabel);
+            return sb.toString();
+        }
+        return itemLabel;
+    }
+
+    public static boolean isSameProperty(Property property, String jobID) {
+        if (property == null || jobID == null) {
+            return false;
+        }
+        String projectLabel = getProjectLabelFromItemId(jobID);
+        if (property.getId().equals(jobID) && (projectLabel == null
+                || projectLabel.equals(ProjectManager.getInstance().getProject(property).getTechnicalLabel()))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean isSameProperty(String sourceProjectLable, String sourceJobId, String targetJobID) {
+        String targetProjectLabel = getProjectLabelFromItemId(targetJobID);
+        if (targetProjectLabel != null) {
+            if (!StringUtils.equals(sourceProjectLable, targetProjectLabel)) {
+                return false;
+            }
+            targetJobID = getPureItemId(targetJobID);
+        }
+        if (StringUtils.equals(getPureItemId(sourceJobId), targetJobID)) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isSameProperty(String jobIdOne, String jobIdTwo, boolean ignoreProjectLabel) {
+        if (jobIdOne == null || jobIdTwo == null) {
+            return false;
+        }
+        if (StringUtils.equals(jobIdOne, jobIdTwo)) {
+            return true;
+        }
+
+        String pureJobIdOne = getPureItemId(jobIdOne);
+        String pureJobIdTwo = getPureItemId(jobIdTwo);
+        String projectLabelOne = getProjectLabelFromItemId(jobIdOne);
+        String projectLabelTwo = getProjectLabelFromItemId(jobIdTwo);
+        if (!ignoreProjectLabel && !StringUtils.equals(projectLabelOne, projectLabelTwo)) {
+            return false;
+        }
+        if (!StringUtils.equals(pureJobIdOne, pureJobIdTwo)) {
+            return false;
+        }
+        return true;
+    }
 }

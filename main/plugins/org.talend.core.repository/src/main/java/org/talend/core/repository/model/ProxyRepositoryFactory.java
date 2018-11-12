@@ -89,6 +89,7 @@ import org.talend.core.model.metadata.MetadataTalendType;
 import org.talend.core.model.metadata.builder.connection.AbstractMetadataObject;
 import org.talend.core.model.metadata.builder.connection.MetadataTable;
 import org.talend.core.model.migration.IMigrationToolService;
+import org.talend.core.model.process.ProcessUtils;
 import org.talend.core.model.properties.ConnectionItem;
 import org.talend.core.model.properties.ContextItem;
 import org.talend.core.model.properties.FolderItem;
@@ -1032,14 +1033,26 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
      */
     @Override
     public List<IRepositoryViewObject> getAllVersion(String id) throws PersistenceException {
-        List<IRepositoryViewObject> allVersion = getAllRefVersion(projectManager.getCurrentProject(), id);
+        String projectLabel = ProcessUtils.getProjectLabelFromItemId(id);
+        Project project = projectManager.getCurrentProject();
+        if (projectLabel != null) {
+            project = projectManager.getProjectFromProjectTechLabel(projectLabel);
+            id = ProcessUtils.getPureItemId(id);
+        }
+        List<IRepositoryViewObject> allVersion = getAllRefVersion(project, id);
         return allVersion;
     }
 
     @Override
     public List<IRepositoryViewObject> getAllVersion(String id, String folderPath, ERepositoryObjectType type)
             throws PersistenceException {
-        List<IRepositoryViewObject> allVersion = getAllRefVersion(projectManager.getCurrentProject(), id, folderPath, type);
+        String projectLabel = ProcessUtils.getProjectLabelFromItemId(id);
+        Project project = projectManager.getCurrentProject();
+        if (projectLabel != null) {
+            project = projectManager.getProjectFromProjectTechLabel(projectLabel);
+            id = ProcessUtils.getPureItemId(id);
+        }
+        List<IRepositoryViewObject> allVersion = getAllRefVersion(project, id, folderPath, type);
         return allVersion;
     }
 
@@ -1100,13 +1113,13 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
 
     @Override
     public IRepositoryViewObject getLastVersion(String id) throws PersistenceException {
-//        String projectLabel = ProcessorUtilities.getProjectLabelFromItemId(id);
-//        if (projectLabel != null) {
-//            Project project = ProjectManager.getInstance().getProjectFromProjectLabel(projectLabel);
-//            if (project != null) {
-//                return getLastVersion(project, ProcessorUtilities.getPureItemId(id));
-//            }
-//        }
+        String projectLabel = ProcessUtils.getProjectLabelFromItemId(id);
+        if (projectLabel != null) {
+            Project project = ProjectManager.getInstance().getProjectFromProjectTechLabel(projectLabel);
+            if (project != null) {
+                return getLastVersion(project, ProcessUtils.getPureItemId(id));
+            }
+        }
         IRepositoryViewObject lastRefVersion = getLastRefVersion(projectManager.getCurrentProject(), id);
         return lastRefVersion;
     }

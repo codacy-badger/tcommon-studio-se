@@ -55,11 +55,8 @@ public class RouteParameterRelationshipHandler extends AbstractJobParameterRelat
             String[] jobsArr = jobIds.split(RelationshipItemBuilder.COMMA);
             for (String jobId : jobsArr) {
                 if (StringUtils.isNotEmpty(jobId)) {
-                    //String projectLabel = ProcessorUtilities.getProjectLabelFromItemId(jobId);
-                    //jobId = ProcessorUtilities.getPureItemId(jobId);
                     Relation addedRelation = new Relation();
                     addedRelation.setId(jobId);
-                   // addedRelation.setProjectLabel(projectLabel);
                     addedRelation.setType(RelationshipItemBuilder.JOB_RELATION);
                     addedRelation.setVersion(jobVersion);
                     relationSet.add(addedRelation);

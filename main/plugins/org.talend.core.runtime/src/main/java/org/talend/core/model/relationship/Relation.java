@@ -22,8 +22,6 @@ public class Relation implements Cloneable {
     private String id;
 
     private String version;
-    
-    private String projectLabel;
 
     public Relation() {
         super();
@@ -105,15 +103,6 @@ public class Relation implements Cloneable {
         this.version = version;
     }
     
-    public String getProjectLabel() {
-        return projectLabel;
-    }
-
-    
-    public void setProjectLabel(String projectLabel) {
-        this.projectLabel = projectLabel;
-    }
-
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return super.clone();
