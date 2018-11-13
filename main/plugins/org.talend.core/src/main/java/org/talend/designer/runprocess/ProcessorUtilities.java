@@ -2523,10 +2523,7 @@ public class ProcessorUtilities {
     }
     
     public static boolean isNeedProjectProcessId(String componentName) {
-      if ("tRunJob".equalsIgnoreCase(componentName) || "cTalendJob".equalsIgnoreCase(componentName)) { //$NON-NLS-1$
-          return true;
-      }
-      return false;
-  }
+        return "tRunJob".equalsIgnoreCase(componentName) || "cTalendJob".equalsIgnoreCase(componentName);
+    }
 
 }

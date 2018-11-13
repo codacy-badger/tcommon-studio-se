@@ -144,27 +144,6 @@ public class ItemCacheManager {
         }
         return processItem;
     }
-    
-    public static Map<Project, ProcessItem> getAllProcessItem(String processId, String version) {
-        Map<Project, ProcessItem> projectToProcessItemMap = new HashMap<Project, ProcessItem>();
-        getAllProcessItem(ProjectManager.getInstance().getCurrentProject(), processId, version, projectToProcessItemMap);
-        return projectToProcessItemMap;
-    }
-
-    private static void getAllProcessItem(Project project, String processId, String version,
-            Map<Project, ProcessItem> projectToProcessItemMap) {
-        ProjectManager projectManager = ProjectManager.getInstance();
-        ProcessItem processItem = getProcessItem(project, processId, version);
-        if (processItem != null) {
-            projectToProcessItemMap.put(project, processItem);
-        }
-        for (Project p : projectManager.getReferencedProjects(project)) {
-            processItem = getProcessItem(p, processId, version);
-            if (processItem != null) {
-                projectToProcessItemMap.put(p, processItem);
-            }
-        }
-    }
 
     public static ProcessItem getProcessItem(Project project, String processId, String version) {
         if (processId == null || "".equals(processId)) { //$NON-NLS-1$

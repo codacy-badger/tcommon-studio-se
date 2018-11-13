@@ -352,11 +352,8 @@ public class RelationshipItemBuilder {
         if (s.equals(t)) {
             return true;
         }
-        if (StringUtils.equals(s.getType(), t.getType()) && StringUtils.equals(s.getVersion(), t.getVersion())
-                && StringUtils.equals(ProcessUtils.getPureItemId(s.getId()), ProcessUtils.getPureItemId(t.getId()))) {
-            return true;
-        }
-        return false;
+        return StringUtils.equals(s.getType(), t.getType()) && StringUtils.equals(s.getVersion(), t.getVersion())
+                && StringUtils.equals(ProcessUtils.getPureItemId(s.getId()), ProcessUtils.getPureItemId(t.getId()));
     }
 
     public void load() {
