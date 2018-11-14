@@ -4446,8 +4446,7 @@ public class DatabaseForm extends AbstractForm {
                                 portText.setText(s[index]);
                                 getConnection().setPort(s[index]);
                             }
-                        }
-                        else if (selection.equals(EDatabaseConnTemplate.MSSQL.getDBDisplayName())) {
+                        } else if (selection.equals(EDatabaseConnTemplate.MSSQL.getDBDisplayName())) {
                             portText.setText("");
                             getConnection().setPort("");
                         }
