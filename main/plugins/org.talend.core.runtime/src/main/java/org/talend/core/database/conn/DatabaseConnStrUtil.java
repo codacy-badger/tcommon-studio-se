@@ -44,6 +44,9 @@ public class DatabaseConnStrUtil {
 
     private static final String SEMICOLON = ";"; //$NON-NLS-1$
 
+    // for match url has :<port> exist
+    private static final String PATTERN_PORT = "(:\\d{1,5})";
+
     private static String getStringReplace(final String init, final String before, final String after,
             final boolean supportContext) {
         return getStringReplace(init, before, after, supportContext, false);
@@ -496,7 +499,6 @@ public class DatabaseConnStrUtil {
         return currentDbType;
     }
 
-    public static final String PATTERN_PORT = "(:\\d{1,5})";
 
     private static void checkIfDynamicPort(EDatabaseConnTemplate template, EDatabaseVersion4Drivers version, String url,
             String[] s) throws MalformedPatternException {
